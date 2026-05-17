@@ -1,0 +1,33 @@
+{
+	"name": "EspecialidadesTabla",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BaseDeDatos",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "bronze"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id_especialidad",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre",
+				"type": "nvarchar"
+			},
+			{
+				"name": "area",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "oltp",
+			"table": "tbl_especialidades"
+		}
+	}
+}

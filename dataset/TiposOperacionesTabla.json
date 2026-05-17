@@ -1,0 +1,33 @@
+{
+	"name": "TiposOperacionesTabla",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BaseDeDatos",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "bronze"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id_tipo",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre",
+				"type": "nvarchar"
+			},
+			{
+				"name": "categoria",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "oltp",
+			"table": "tbl_tipos_operacion"
+		}
+	}
+}
