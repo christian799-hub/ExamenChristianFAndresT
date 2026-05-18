@@ -1,0 +1,82 @@
+{
+	"name": "df_Efectivos",
+	"properties": {
+		"folder": {
+			"name": "bronze"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EfectivosTabla",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "NormalizarNombre"
+				},
+				{
+					"name": "NormalizarFechas"
+				},
+				{
+					"name": "NormalizarDepartamento"
+				},
+				{
+					"name": "NormalizarSexo"
+				},
+				{
+					"name": "NormalizarSalario"
+				},
+				{
+					"name": "NormalizarCI"
+				},
+				{
+					"name": "NormalizarEstado"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_efectivo as integer,",
+				"          id_especialidad as integer,",
+				"          id_unidad_actual as integer,",
+				"          id_rango_actual as integer,",
+				"          nombre as string,",
+				"          ci as string,",
+				"          fecha_nacimiento as string,",
+				"          genero as string,",
+				"          departamento_origen as string,",
+				"          fecha_ingreso as string,",
+				"          estado as string,",
+				"          salario_mensual as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(nombre = initCap(trim(regexReplace(replace(replace(nombre, '#', ' '), char(9), ' '), ' +', ' ')))) ~> NormalizarNombre",
+				"NormalizarNombre derive(fecha_nacimiento = coalesce(\r",
+				"toDate(fecha_nacimiento, 'dd-MM-yyyy'),\r",
+				"toDate(fecha_nacimiento,  'dd/MM/yyyy'),\r",
+				"toDate(fecha_nacimiento, 'yyyy/MM/dd'),\r",
+				"toDate(fecha_nacimiento, 'yyyyMMdd'), \r",
+				"toDate(fecha_nacimiento, 'yyyy-MM-dd')),",
+				"          fecha_ingreso = coalesce(\r",
+				"toDate(fecha_ingreso, 'dd-MM-yyyy'),\r",
+				"toDate(fecha_ingreso,  'dd/MM/yyyy'),\r",
+				"toDate(fecha_ingreso, 'yyyy/MM/dd'),\r",
+				"toDate(fecha_ingreso, 'yyyyMMdd'), \r",
+				"toDate(fecha_ingreso, 'yyyy-MM-dd'))) ~> NormalizarFechas",
+				"NormalizarFechas derive(departamento_origen = case(     like(upper(trim(departamento_origen)), '%LP%') || like(upper(trim(departamento_origen)), '%LA PAZ%') || like(upper(trim(departamento_origen)), '%L.P.%'), 'La Paz',     like(upper(trim(departamento_origen)), '%SC%') || like(upper(trim(departamento_origen)), '%STA%CRUZ%') || like(upper(trim(departamento_origen)), '%SANTA CRUZ%'), 'Santa Cruz',     like(upper(trim(departamento_origen)), '%CB%') || like(upper(trim(departamento_origen)), '%COCHABAMBA%'), 'Cochabamba',     like(upper(trim(departamento_origen)), '%TJ%') || like(upper(trim(departamento_origen)), '%TARIJA%'), 'Tarija',     like(upper(trim(departamento_origen)), '%OR%') || like(upper(trim(departamento_origen)), '%ORURO%'), 'Oruro',     like(upper(trim(departamento_origen)), '%PT%') || like(upper(trim(departamento_origen)), '%POTOSI%'), 'Potosí',     like(upper(trim(departamento_origen)), '%CH%') || like(upper(trim(departamento_origen)), '%CHUQUISACA%'), 'Chuquisaca',     like(upper(trim(departamento_origen)), '%BN%') || like(upper(trim(departamento_origen)), '%BENI%'), 'Beni',     like(upper(trim(departamento_origen)), '%PA%') || like(upper(trim(departamento_origen)), '%PANDO%'), 'Pando',     initCap(trim(departamento_origen)) )) ~> NormalizarDepartamento",
+				"NormalizarDepartamento derive(genero = iif(equals(upper(left(trim(genero), 1)), 'F'), 'Femenino', 'Masculino')) ~> NormalizarSexo",
+				"NormalizarSexo derive(salario_mensual = toDecimal(     replace(         regexReplace(salario_mensual, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarSalario",
+				"NormalizarSalario derive(ci = regexExtract(ci, '(\\\\d+)', 1)) ~> NormalizarCI",
+				"NormalizarCI derive(estado = iif(     like(upper(trim(estado)), 'A%') || like(upper(trim(estado)), 'ACT%') || like(upper(trim(estado)), '%ACTIV%'),     'Activo',     iif(         like(upper(trim(estado)), '%BAJA%') || like(upper(trim(estado)), 'BJA%'),         'Baja',         iif(             like(upper(trim(estado)), 'R%') || like(upper(trim(estado)), '%RESERVA%') || like(upper(trim(estado)), 'RSV%'),             'En Reserva',             initCap(trim(estado))         )     ) )) ~> NormalizarEstado"
+			]
+		}
+	}
+}
