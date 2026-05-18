@@ -15,7 +15,11 @@
 					"name": "source1"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "NormalizarNombre"
@@ -75,7 +79,11 @@
 				"NormalizarDepartamento derive(genero = iif(equals(upper(left(trim(genero), 1)), 'F'), 'Femenino', 'Masculino')) ~> NormalizarSexo",
 				"NormalizarSexo derive(salario_mensual = toDecimal(     replace(         regexReplace(salario_mensual, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarSalario",
 				"NormalizarSalario derive(ci = regexExtract(ci, '(\\\\d+)', 1)) ~> NormalizarCI",
-				"NormalizarCI derive(estado = iif(     like(upper(trim(estado)), 'A%') || like(upper(trim(estado)), 'ACT%') || like(upper(trim(estado)), '%ACTIV%'),     'Activo',     iif(         like(upper(trim(estado)), '%BAJA%') || like(upper(trim(estado)), 'BJA%'),         'Baja',         iif(             like(upper(trim(estado)), 'R%') || like(upper(trim(estado)), '%RESERVA%') || like(upper(trim(estado)), 'RSV%'),             'En Reserva',             initCap(trim(estado))         )     ) )) ~> NormalizarEstado"
+				"NormalizarCI derive(estado = iif(     like(upper(trim(estado)), 'A%') || like(upper(trim(estado)), 'ACT%') || like(upper(trim(estado)), '%ACTIV%'),     'Activo',     iif(         like(upper(trim(estado)), '%BAJA%') || like(upper(trim(estado)), 'BJA%'),         'Baja',         iif(             like(upper(trim(estado)), 'R%') || like(upper(trim(estado)), '%RESERVA%') || like(upper(trim(estado)), 'RSV%'),             'En Reserva',             initCap(trim(estado))         )     ) )) ~> NormalizarEstado",
+				"NormalizarEstado sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}

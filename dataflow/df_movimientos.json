@@ -6,11 +6,54 @@
 		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
-			"sources": [],
-			"sinks": [],
-			"transformations": [],
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "MovimientosTabla",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "NormalizarFecha"
+				},
+				{
+					"name": "NormalizarSalario"
+				},
+				{
+					"name": "NormalizarAntiguedad"
+				}
+			],
 			"scriptLines": [
-				""
+				"source(output(",
+				"          id_movimiento as integer,",
+				"          id_efectivo as integer,",
+				"          id_unidad_destino as integer,",
+				"          id_rango as integer,",
+				"          id_tipo as integer,",
+				"          fecha_movimiento as string,",
+				"          antiguedad_anios as string,",
+				"          salario_mensual as string,",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(fecha_movimiento = coalesce(toDate(fecha_movimiento, 'dd-MM-yyyy'),toDate(fecha_movimiento,  'dd/MM/yyyy'),toDate(fecha_movimiento, 'yyyy/MM/dd'),toDate(fecha_movimiento, 'yyyyMMdd'), toDate(fecha_movimiento, 'yyyy-MM-dd'))) ~> NormalizarFecha",
+				"NormalizarAntiguedad derive(salario_mensual = toDecimal(     replace(         regexReplace(salario_mensual, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarSalario",
+				"NormalizarFecha derive(antiguedad_anios = toInteger(    replace(        replace(            replace(                replace(                    replace(                        replace(                            replace(                                replace(                                    replace(                                        replace(                                            replace(                                                replace(                                                    replace(                                                        replace(                                                            replace(                                                                replace(                                                                    replace(                                                                        trim(                                                                            regexReplace(                                                                                replace(                                                                                    replace(                                                                                        replace(                                                                                            lower(trim(antiguedad_anios)),                                                                                            'aprox.', ''                                                                                        ),                                                                                         'años', ''                                                                                    ),                                                                                     'a.', ''                                                                                ),                                                                                 ' +', ' '                                                                            )                                                                        ),                                                                        'diecisiete', '17'                                                                    ),                                                                    'dieciséis', '16'                                                                ),                                                                'quince', '15'                                                            ),                                                            'catorce', '14'                                                        ),                                                        'trece', '13'                                                    ),                                                    'doce', '12'                                                ),                                                'once', '11'                                            ),                                            'diez', '10'                                        ),                                        'nueve', '9'                                    ),                                    'ocho', '8'                                ),                                'siete', '7'                            ),                            'seis', '6'                        ),                        'cinco', '5'                    ),                    'cuatro', '4'                ),                'tres', '3'            ),            'dos', '2'        ),        'cero', '0'    ))) ~> NormalizarAntiguedad",
+				"NormalizarSalario sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}

@@ -6,11 +6,44 @@
 		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
-			"sources": [],
-			"sinks": [],
-			"transformations": [],
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EstructuraTabla",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "CapitalizarNivel"
+				}
+			],
 			"scriptLines": [
-				""
+				"source(output(",
+				"          id_estructura as integer,",
+				"          id_padre as integer,",
+				"          nivel as string,",
+				"          nombre as string,",
+				"          sigla as string,",
+				"          tipo as string,",
+				"          cobertura_departamentos as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 derive(nivel = initCap(nivel)) ~> CapitalizarNivel",
+				"CapitalizarNivel sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
 			]
 		}
 	}
