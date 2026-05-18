@@ -9,7 +9,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "TiposMovTablas",
+						"referenceName": "TiposMovBronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"

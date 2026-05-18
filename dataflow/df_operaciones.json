@@ -9,7 +9,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "OperacionesTabla",
+						"referenceName": "OperacionesBronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"

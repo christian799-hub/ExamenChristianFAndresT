@@ -9,7 +9,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "RangosTabla",
+						"referenceName": "RangosBronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"

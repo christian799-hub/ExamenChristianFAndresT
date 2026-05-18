@@ -9,7 +9,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "ZonasTabla",
+						"referenceName": "ZonasBronze",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
