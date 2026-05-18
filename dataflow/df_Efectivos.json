@@ -17,6 +17,10 @@
 			],
 			"sinks": [
 				{
+					"dataset": {
+						"referenceName": "EfectivosSilver",
+						"type": "DatasetReference"
+					},
 					"name": "sink1"
 				}
 			],
@@ -82,8 +86,28 @@
 				"NormalizarCI derive(estado = iif(     like(upper(trim(estado)), 'A%') || like(upper(trim(estado)), 'ACT%') || like(upper(trim(estado)), '%ACTIV%'),     'Activo',     iif(         like(upper(trim(estado)), '%BAJA%') || like(upper(trim(estado)), 'BJA%'),         'Baja',         iif(             like(upper(trim(estado)), 'R%') || like(upper(trim(estado)), '%RESERVA%') || like(upper(trim(estado)), 'RSV%'),             'En Reserva',             initCap(trim(estado))         )     ) )) ~> NormalizarEstado",
 				"NormalizarEstado sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     input(",
+				"          id_efectivo as integer,",
+				"          id_especialidad as integer,",
+				"          id_unidad_actual as integer,",
+				"          id_rango_actual as integer,",
+				"          nombre as string,",
+				"          ci as string,",
+				"          fecha_nacimiento as string,",
+				"          genero as string,",
+				"          departamento_origen as string,",
+				"          fecha_ingreso as string,",
+				"          estado as string,",
+				"          salario_mensual as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
 			]
 		}
 	}
