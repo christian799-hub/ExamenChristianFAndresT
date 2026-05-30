@@ -1,0 +1,78 @@
+{
+	"name": "gold_fact_movimientos_personal",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "MovimientosSilver",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlMovimientoPersonal",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "cast1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_movimiento as integer,",
+				"          id_efectivo as integer,",
+				"          id_unidad_destino as integer,",
+				"          id_rango as integer,",
+				"          id_tipo as integer,",
+				"          fecha_movimiento as string,",
+				"          antiguedad_anios as string,",
+				"          salario_mensual as string,",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 cast(output(",
+				"          fecha_movimiento as date 'yyyy-MM-dd',",
+				"          antiguedad_anios as integer,",
+				"          salario_mensual as decimal(10,0)",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"cast1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          id_movimiento as integer,",
+				"          id_efectivo as integer,",
+				"          id_unidad_destino as integer,",
+				"          id_rango as integer,",
+				"          id_tipo_movimiento as integer,",
+				"          fecha_movimiento as date,",
+				"          antiguedad_anios as integer,",
+				"          salario_mensual as decimal(18,2),",
+				"          observaciones as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+			]
+		}
+	}
+}

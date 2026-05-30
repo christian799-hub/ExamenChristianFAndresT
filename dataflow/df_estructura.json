@@ -17,6 +17,10 @@
 			],
 			"sinks": [
 				{
+					"dataset": {
+						"referenceName": "EstructuraSilver",
+						"type": "DatasetReference"
+					},
 					"name": "sink1"
 				}
 			],
@@ -42,8 +46,23 @@
 				"source1 derive(nivel = initCap(nivel)) ~> CapitalizarNivel",
 				"CapitalizarNivel sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     input(",
+				"          id_estructura as integer,",
+				"          id_padre as integer,",
+				"          nivel as string,",
+				"          nombre as string,",
+				"          sigla as string,",
+				"          tipo as string,",
+				"          cobertura_departamentos as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
 			]
 		}
 	}

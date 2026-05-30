@@ -1,15 +1,15 @@
 {
-	"name": "df_tiposoperaciones",
+	"name": "df_gold_tipo_operacion",
 	"properties": {
 		"folder": {
-			"name": "bronze"
+			"name": "gold"
 		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "TiposOperacionesBronze",
+						"referenceName": "TiposOperacionesSilver",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
@@ -18,17 +18,13 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "TiposOperacionesSilver",
+						"referenceName": "AzureSqlTable3",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
 				}
 			],
-			"transformations": [
-				{
-					"name": "derivedColumn1"
-				}
-			],
+			"transformations": [],
 			"scriptLines": [
 				"source(output(",
 				"          id_tipo as integer,",
@@ -39,8 +35,7 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source1 derive(categoria = initCap(categoria)) ~> derivedColumn1",
-				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"source1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_tipo as integer,",
@@ -54,7 +49,12 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          id_tipo,",
+				"          nombre,",
+				"          categoria",
+				"     )) ~> sink1"
 			]
 		}
 	}

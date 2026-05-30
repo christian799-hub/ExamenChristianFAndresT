@@ -1,0 +1,46 @@
+{
+	"name": "AzureSqlUnidad",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Destino",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id_unidad",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre_unidad",
+				"type": "varchar"
+			},
+			{
+				"name": "tipo_unidad",
+				"type": "varchar"
+			},
+			{
+				"name": "nombre_brigada",
+				"type": "varchar"
+			},
+			{
+				"name": "nombre_division",
+				"type": "varchar"
+			},
+			{
+				"name": "nombre_rama",
+				"type": "varchar"
+			},
+			{
+				"name": "cobertura_departamental",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dw",
+			"table": "dim_unidad"
+		}
+	}
+}

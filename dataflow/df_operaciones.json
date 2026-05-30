@@ -17,6 +17,10 @@
 			],
 			"sinks": [
 				{
+					"dataset": {
+						"referenceName": "OperacionesSilver",
+						"type": "DatasetReference"
+					},
 					"name": "sink1"
 				}
 			],
@@ -176,8 +180,32 @@
 				"NormalizarNumeros derive(costo_operacion = toDecimal(     replace(         regexReplace(costo_operacion, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarCosto",
 				"NormalizarCosto sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     input(",
+				"          id_operacion as integer,",
+				"          id_tipo as integer,",
+				"          id_unidad_resp as integer,",
+				"          id_zona as integer,",
+				"          nombre_operacion as string,",
+				"          fecha_inicio as string,",
+				"          fecha_fin as string,",
+				"          efectivos_desplegados as string,",
+				"          vehiculos_utilizados as string,",
+				"          duracion_dias as string,",
+				"          costo_operacion as string,",
+				"          resultado as string,",
+				"          detenidos as string,",
+				"          area_km2 as string,",
+				"          incidentes as string,",
+				"          observaciones as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
 			]
 		}
 	}

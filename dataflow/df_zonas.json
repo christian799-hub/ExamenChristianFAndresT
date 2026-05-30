@@ -17,6 +17,10 @@
 			],
 			"sinks": [
 				{
+					"dataset": {
+						"referenceName": "ZonasSilver",
+						"type": "DatasetReference"
+					},
 					"name": "sink1"
 				}
 			],
@@ -44,8 +48,24 @@
 				"          nivel_riesgo = initCap(nivel_riesgo)) ~> CapitalizarTerrenoRiesgo",
 				"CapitalizarTerrenoRiesgo sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
+				"     input(",
+				"          id_zona as integer,",
+				"          nombre as string,",
+				"          departamento as string,",
+				"          frontera_con as string,",
+				"          tipo_terreno as string,",
+				"          altitud_msnm as integer,",
+				"          nivel_riesgo as string,",
+				"          acceso_carretero as boolean",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
 			]
 		}
 	}

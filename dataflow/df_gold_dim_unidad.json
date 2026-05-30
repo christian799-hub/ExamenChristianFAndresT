@@ -1,0 +1,102 @@
+{
+	"name": "df_gold_dim_unidad",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EstructuraSilver",
+						"type": "DatasetReference"
+					},
+					"name": "EstructuraSilverSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "UnidadesSilver",
+						"type": "DatasetReference"
+					},
+					"name": "UnidadesSilverSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlUnidad",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_estructura as integer,",
+				"          id_padre as integer,",
+				"          nivel as string,",
+				"          nombre as string,",
+				"          sigla as string,",
+				"          tipo as string,",
+				"          cobertura_departamentos as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> EstructuraSilverSource",
+				"source(output(",
+				"          id_unidad as integer,",
+				"          id_brigada as integer,",
+				"          nombre as string,",
+				"          codigo as string,",
+				"          ciudad as string,",
+				"          departamento as string,",
+				"          tipo_cuartel as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> UnidadesSilverSource",
+				"EstructuraSilverSource, UnidadesSilverSource join(id_estructura == id_brigada,",
+				"     joinType:'right',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          id_unidad as integer,",
+				"          nombre_unidad as string,",
+				"          tipo_unidad as string,",
+				"          nombre_brigada as string,",
+				"          nombre_division as string,",
+				"          nombre_rama as string,",
+				"          cobertura_departamental as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          id_unidad,",
+				"          nombre_unidad = EstructuraSilverSource@nombre,",
+				"          tipo_unidad = tipo_cuartel,",
+				"          nombre_brigada = EstructuraSilverSource@nombre,",
+				"          nombre_division = sigla,",
+				"          nombre_rama = tipo,",
+				"          cobertura_departamental = cobertura_departamentos",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}

@@ -1,15 +1,15 @@
 {
-	"name": "df_tiposoperaciones",
+	"name": "df_gold_tipo_movimiento",
 	"properties": {
 		"folder": {
-			"name": "bronze"
+			"name": "gold"
 		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "TiposOperacionesBronze",
+						"referenceName": "TiposMovSilver",
 						"type": "DatasetReference"
 					},
 					"name": "source1"
@@ -18,34 +18,28 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "TiposOperacionesSilver",
+						"referenceName": "AzureSqlTableMovimiento",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
 				}
 			],
-			"transformations": [
-				{
-					"name": "derivedColumn1"
-				}
-			],
+			"transformations": [],
 			"scriptLines": [
 				"source(output(",
 				"          id_tipo as integer,",
 				"          nombre as string,",
-				"          categoria as string",
+				"          descripcion as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source1 derive(categoria = initCap(categoria)) ~> derivedColumn1",
-				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"source1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_tipo as integer,",
-				"          nombre as string,",
-				"          categoria as string",
+				"          nombre as string",
 				"     ),",
 				"     deletable:false,",
 				"     insertable:true,",
@@ -54,7 +48,11 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          id_tipo,",
+				"          nombre",
+				"     )) ~> sink1"
 			]
 		}
 	}

@@ -1,0 +1,34 @@
+{
+	"name": "AzureSqlZonaOperacion",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Destino",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id_zona",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "nombre_zona",
+				"type": "varchar"
+			},
+			{
+				"name": "departamento",
+				"type": "varchar"
+			},
+			{
+				"name": "frontera_con",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dw",
+			"table": "dim_zona_operacion"
+		}
+	}
+}

@@ -1,0 +1,114 @@
+{
+	"name": "df_gold_fact_operaciones",
+	"properties": {
+		"folder": {
+			"name": "gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "OperacionesSilver",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "AzureSqlOperaciones",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "cast1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id_operacion as integer,",
+				"          id_tipo as integer,",
+				"          id_unidad_resp as integer,",
+				"          id_zona as integer,",
+				"          nombre_operacion as string,",
+				"          fecha_inicio as string,",
+				"          fecha_fin as string,",
+				"          efectivos_desplegados as string,",
+				"          vehiculos_utilizados as string,",
+				"          duracion_dias as string,",
+				"          costo_operacion as string,",
+				"          resultado as string,",
+				"          detenidos as string,",
+				"          area_km2 as string,",
+				"          incidentes as string,",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source1",
+				"source1 cast(output(",
+				"          fecha_inicio as date 'yyyy-MM-dd',",
+				"          fecha_fin as date 'yyyy-MM-dd',",
+				"          efectivos_desplegados as integer,",
+				"          vehiculos_utilizados as integer,",
+				"          duracion_dias as integer,",
+				"          costo_operacion as decimal(10,0),",
+				"          detenidos as integer,",
+				"          area_km2 as decimal(10,0),",
+				"          incidentes as integer",
+				"     ),",
+				"     errors: true) ~> cast1",
+				"cast1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          id_operacion as integer,",
+				"          id_tipo_operacion as integer,",
+				"          id_unidad_responsable as integer,",
+				"          id_zona as integer,",
+				"          nombre_operacion as string,",
+				"          fecha_inicio as date,",
+				"          fecha_fin as date,",
+				"          efectivos_desplegados as integer,",
+				"          vehiculos_utilizados as integer,",
+				"          duracion_dias as integer,",
+				"          costo_operacion as decimal(18,2),",
+				"          resultado as string,",
+				"          detenidos as integer,",
+				"          area_km2 as decimal(12,2),",
+				"          incidentes as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          id_operacion,",
+				"          id_tipo_operacion = id_tipo,",
+				"          id_unidad_responsable = id_unidad_resp,",
+				"          id_zona,",
+				"          nombre_operacion,",
+				"          fecha_inicio,",
+				"          fecha_fin,",
+				"          efectivos_desplegados,",
+				"          vehiculos_utilizados,",
+				"          duracion_dias,",
+				"          costo_operacion,",
+				"          resultado,",
+				"          detenidos,",
+				"          area_km2,",
+				"          incidentes",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
