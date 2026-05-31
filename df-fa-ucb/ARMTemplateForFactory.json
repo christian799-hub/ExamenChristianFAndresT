@@ -37,11 +37,11 @@
 		},
 		"Destino_properties_typeProperties_server": {
 			"type": "string",
-			"defaultValue": "server02-fuerzas-armadas-dw.database.windows.net"
+			"defaultValue": "sql-fa-dw-ca.database.windows.net"
 		},
 		"Destino_properties_typeProperties_database": {
 			"type": "string",
-			"defaultValue": "dw-fuerzas-armadas-bolivia"
+			"defaultValue": "fuerzas-armadas-ca"
 		},
 		"Destino_properties_typeProperties_userName": {
 			"type": "string",
@@ -4245,13 +4245,7 @@
 						"     skipDuplicateMapOutputs: true,",
 						"     errorHandlingOption: 'stopOnFirstError',",
 						"     mapColumn(",
-						"          id_unidad,",
-						"          nombre_unidad = EstructuraSilverSource@nombre,",
-						"          tipo_unidad = tipo_cuartel,",
-						"          nombre_brigada = EstructuraSilverSource@nombre,",
-						"          nombre_division = sigla,",
-						"          nombre_rama = tipo,",
-						"          cobertura_departamental = cobertura_departamentos",
+						"          id_unidad",
 						"     )) ~> sink1"
 					]
 				}

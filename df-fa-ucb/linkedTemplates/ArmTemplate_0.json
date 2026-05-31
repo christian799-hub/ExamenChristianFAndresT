@@ -37,11 +37,11 @@
 		},
 		"Destino_properties_typeProperties_server": {
 			"type": "string",
-			"defaultValue": "server02-fuerzas-armadas-dw.database.windows.net"
+			"defaultValue": "sql-fa-dw-ca.database.windows.net"
 		},
 		"Destino_properties_typeProperties_database": {
 			"type": "string",
-			"defaultValue": "dw-fuerzas-armadas-bolivia"
+			"defaultValue": "fuerzas-armadas-ca"
 		},
 		"Destino_properties_typeProperties_userName": {
 			"type": "string",

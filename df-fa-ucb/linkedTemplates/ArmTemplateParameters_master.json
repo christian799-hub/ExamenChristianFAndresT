@@ -27,10 +27,10 @@
 			"value": "userSisGer"
 		},
 		"Destino_properties_typeProperties_server": {
-			"value": "server02-fuerzas-armadas-dw.database.windows.net"
+			"value": "sql-fa-dw-ca.database.windows.net"
 		},
 		"Destino_properties_typeProperties_database": {
-			"value": "dw-fuerzas-armadas-bolivia"
+			"value": "fuerzas-armadas-ca"
 		},
 		"Destino_properties_typeProperties_userName": {
 			"value": "admin2"
