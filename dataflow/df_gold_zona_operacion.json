@@ -24,7 +24,11 @@
 					"name": "sink1"
 				}
 			],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "aggregate1"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          id_zona as integer,",
@@ -40,7 +44,15 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source1 sink(allowSchemaDrift: true,",
+				"source1 aggregate(groupBy(id_zona),",
+				"     nombre = first(nombre),",
+				"          departamento = first(departamento),",
+				"          frontera_con = first(frontera_con),",
+				"          tipo_terreno = first(tipo_terreno),",
+				"          altitud_msnm = first(altitud_msnm),",
+				"          nivel_riesgo = first(nivel_riesgo),",
+				"          acceso_carretero = first(acceso_carretero)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_zona as integer,",
@@ -53,6 +65,7 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.dim_zona_operacion;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",

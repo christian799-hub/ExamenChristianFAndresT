@@ -13,6 +13,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "AzureSqlMovimientoPersonal",
+						"type": "DatasetReference"
+					},
+					"name": "origenDimUnidad"
 				}
 			],
 			"sinks": [
@@ -27,6 +34,12 @@
 			"transformations": [
 				{
 					"name": "cast1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "exists1"
 				}
 			],
 			"scriptLines": [
@@ -45,13 +58,40 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
+				"source(output(",
+				"          id_movimiento as integer,",
+				"          id_efectivo as integer,",
+				"          id_unidad_destino as integer,",
+				"          id_rango as integer,",
+				"          id_tipo_movimiento as integer,",
+				"          fecha_movimiento as date,",
+				"          antiguedad_anios as integer,",
+				"          salario_mensual as decimal(18,2),",
+				"          observaciones as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> origenDimUnidad",
 				"source1 cast(output(",
 				"          fecha_movimiento as date 'yyyy-MM-dd',",
 				"          antiguedad_anios as integer,",
 				"          salario_mensual as decimal(10,0)",
 				"     ),",
 				"     errors: true) ~> cast1",
-				"cast1 sink(allowSchemaDrift: true,",
+				"cast1 aggregate(groupBy(id_movimiento),",
+				"     id_efectivo = first(id_efectivo),",
+				"          id_unidad_destino = first(id_unidad_destino),",
+				"          id_rango = first(id_rango),",
+				"          id_tipo = first(id_tipo),",
+				"          fecha_movimiento = iif(isNull(first(fecha_movimiento)), toDate('1900-01-01'), first(fecha_movimiento)),",
+				"          antiguedad_anios = first(antiguedad_anios),",
+				"          salario_mensual = first(salario_mensual),",
+				"          observaciones = first(observaciones)) ~> aggregate1",
+				"aggregate1, origenDimUnidad exists(aggregate1@id_unidad_destino == origenDimUnidad@id_unidad_destino,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> exists1",
+				"exists1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_movimiento as integer,",
@@ -69,9 +109,21 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.fact_movimientos_personal;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          id_movimiento,",
+				"          id_efectivo,",
+				"          id_unidad_destino,",
+				"          id_rango,",
+				"          id_tipo_movimiento = id_tipo,",
+				"          fecha_movimiento,",
+				"          antiguedad_anios,",
+				"          salario_mensual,",
+				"          observaciones",
+				"     )) ~> sink1"
 			]
 		}
 	}

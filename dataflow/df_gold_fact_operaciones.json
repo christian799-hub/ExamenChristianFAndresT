@@ -13,6 +13,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "AzureSqlOperaciones",
+						"type": "DatasetReference"
+					},
+					"name": "source2"
 				}
 			],
 			"sinks": [
@@ -27,6 +34,12 @@
 			"transformations": [
 				{
 					"name": "cast1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "exists1"
 				}
 			],
 			"scriptLines": [
@@ -52,6 +65,27 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
+				"source(output(",
+				"          id_operacion as integer,",
+				"          id_tipo_operacion as integer,",
+				"          id_unidad_responsable as integer,",
+				"          id_zona as integer,",
+				"          nombre_operacion as string,",
+				"          fecha_inicio as date,",
+				"          fecha_fin as date,",
+				"          efectivos_desplegados as integer,",
+				"          vehiculos_utilizados as integer,",
+				"          duracion_dias as integer,",
+				"          costo_operacion as decimal(18,2),",
+				"          resultado as string,",
+				"          detenidos as integer,",
+				"          area_km2 as decimal(12,2),",
+				"          incidentes as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source2",
 				"source1 cast(output(",
 				"          fecha_inicio as date 'yyyy-MM-dd',",
 				"          fecha_fin as date 'yyyy-MM-dd',",
@@ -64,7 +98,26 @@
 				"          incidentes as integer",
 				"     ),",
 				"     errors: true) ~> cast1",
-				"cast1 sink(allowSchemaDrift: true,",
+				"cast1 aggregate(groupBy(id_operacion),",
+				"     id_tipo = first(id_tipo),",
+				"          id_unidad_resp = first(id_unidad_resp),",
+				"          id_zona = first(id_zona),",
+				"          nombre_operacion = first(nombre_operacion),",
+				"          fecha_inicio = first(fecha_inicio),",
+				"          fecha_fin = first(fecha_fin),",
+				"          efectivos_desplegados = first(efectivos_desplegados),",
+				"          vehiculos_utilizados = first(vehiculos_utilizados),",
+				"          duracion_dias = first(duracion_dias),",
+				"          costo_operacion = first(costo_operacion),",
+				"          resultado = first(resultado),",
+				"          detenidos = first(detenidos),",
+				"          area_km2 = first(area_km2),",
+				"          incidentes = first(incidentes),",
+				"          observaciones = first(observaciones)) ~> aggregate1",
+				"aggregate1, source2 exists(id_unidad_resp == id_unidad_responsable,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> exists1",
+				"exists1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_operacion as integer,",
@@ -88,6 +141,7 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.fact_operaciones;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",

@@ -34,6 +34,9 @@
 			"transformations": [
 				{
 					"name": "join1"
+				},
+				{
+					"name": "aggregate1"
 				}
 			],
 			"scriptLines": [
@@ -68,7 +71,20 @@
 				"     matchType:'exact',",
 				"     ignoreSpaces: false,",
 				"     broadcast: 'auto')~> join1",
-				"join1 sink(allowSchemaDrift: true,",
+				"join1 aggregate(groupBy(id_unidad),",
+				"     id_estructura = first(id_estructura),",
+				"          id_padre = first(id_padre),",
+				"          nivel = first(nivel),",
+				"          nombre = first(EstructuraSilverSource@nombre),",
+				"          sigla = first(sigla),",
+				"          tipo = first(tipo),",
+				"          cobertura_departamentos = first(cobertura_departamentos),",
+				"          id_brigada = first(id_brigada),",
+				"          codigo = first(codigo),",
+				"          ciudad = first(ciudad),",
+				"          departamento = first(departamento),",
+				"          tipo_cuartel = first(tipo_cuartel)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_unidad as integer,",
@@ -84,6 +100,7 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.dim_unidad;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",

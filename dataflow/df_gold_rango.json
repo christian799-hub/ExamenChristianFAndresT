@@ -24,7 +24,11 @@
 					"name": "DestinoDimRango"
 				}
 			],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "aggregate1"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          id_rango as integer,",
@@ -37,7 +41,12 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source1 sink(allowSchemaDrift: true,",
+				"source1 aggregate(groupBy(id_rango),",
+				"     nombre = first(nombre),",
+				"          categoria = first(categoria),",
+				"          nivel_jerarquico = first(nivel_jerarquico),",
+				"          abreviatura = first(abreviatura)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_rango as integer,",
@@ -49,6 +58,7 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.dim_rango;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",

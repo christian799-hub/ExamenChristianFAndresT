@@ -24,7 +24,11 @@
 					"name": "sink1"
 				}
 			],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "aggregate1"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          id_especialidad as integer,",
@@ -35,7 +39,10 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source1 sink(allowSchemaDrift: true,",
+				"source1 aggregate(groupBy(id_especialidad),",
+				"     nombre = first(nombre),",
+				"          area = first(area)) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          id_especialidad as integer,",
@@ -46,6 +53,7 @@
 				"     updateable:false,",
 				"     upsertable:false,",
 				"     format: 'table',",
+				"     preSQLs:['DELETE FROM dw.dim_especialidad;'],",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",
