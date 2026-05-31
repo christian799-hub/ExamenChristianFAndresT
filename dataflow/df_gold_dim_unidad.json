@@ -105,13 +105,7 @@
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError',",
 				"     mapColumn(",
-				"          id_unidad,",
-				"          nombre_unidad = EstructuraSilverSource@nombre,",
-				"          tipo_unidad = tipo_cuartel,",
-				"          nombre_brigada = EstructuraSilverSource@nombre,",
-				"          nombre_division = sigla,",
-				"          nombre_rama = tipo,",
-				"          cobertura_departamental = cobertura_departamentos",
+				"          id_unidad",
 				"     )) ~> sink1"
 			]
 		}
