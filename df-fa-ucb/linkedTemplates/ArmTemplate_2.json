@@ -1,0 +1,2178 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Nombre de instancia de Data Factory",
+			"defaultValue": "df-fa-ucb"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ZonasSilver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_zona",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "departamento",
+						"type": "nvarchar"
+					},
+					{
+						"name": "frontera_con",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tipo_terreno",
+						"type": "varchar"
+					},
+					{
+						"name": "altitud_msnm",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nivel_riesgo",
+						"type": "varchar"
+					},
+					{
+						"name": "acceso_carretero",
+						"type": "bit"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "Zonas"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ZonasTabla')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BaseDeDatos",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_zona",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "departamento",
+						"type": "nvarchar"
+					},
+					{
+						"name": "frontera_con",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tipo_terreno",
+						"type": "varchar"
+					},
+					{
+						"name": "altitud_msnm",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nivel_riesgo",
+						"type": "varchar"
+					},
+					{
+						"name": "acceso_carretero",
+						"type": "bit"
+					}
+				],
+				"typeProperties": {
+					"schema": "oltp",
+					"table": "tbl_zonas"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Efectivos')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EfectivosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "EfectivosSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "NormalizarNombre"
+						},
+						{
+							"name": "NormalizarFechas"
+						},
+						{
+							"name": "NormalizarDepartamento"
+						},
+						{
+							"name": "NormalizarSexo"
+						},
+						{
+							"name": "NormalizarSalario"
+						},
+						{
+							"name": "NormalizarCI"
+						},
+						{
+							"name": "NormalizarEstado"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_efectivo as integer,",
+						"          id_especialidad as integer,",
+						"          id_unidad_actual as integer,",
+						"          id_rango_actual as integer,",
+						"          nombre as string,",
+						"          ci as string,",
+						"          fecha_nacimiento as string,",
+						"          genero as string,",
+						"          departamento_origen as string,",
+						"          fecha_ingreso as string,",
+						"          estado as string,",
+						"          salario_mensual as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(nombre = initCap(trim(regexReplace(replace(replace(nombre, '#', ' '), char(9), ' '), ' +', ' ')))) ~> NormalizarNombre",
+						"NormalizarNombre derive(fecha_nacimiento = coalesce(\r",
+						"toDate(fecha_nacimiento, 'dd-MM-yyyy'),\r",
+						"toDate(fecha_nacimiento,  'dd/MM/yyyy'),\r",
+						"toDate(fecha_nacimiento, 'yyyy/MM/dd'),\r",
+						"toDate(fecha_nacimiento, 'yyyyMMdd'), \r",
+						"toDate(fecha_nacimiento, 'yyyy-MM-dd')),",
+						"          fecha_ingreso = coalesce(\r",
+						"toDate(fecha_ingreso, 'dd-MM-yyyy'),\r",
+						"toDate(fecha_ingreso,  'dd/MM/yyyy'),\r",
+						"toDate(fecha_ingreso, 'yyyy/MM/dd'),\r",
+						"toDate(fecha_ingreso, 'yyyyMMdd'), \r",
+						"toDate(fecha_ingreso, 'yyyy-MM-dd'))) ~> NormalizarFechas",
+						"NormalizarFechas derive(departamento_origen = case(     like(upper(trim(departamento_origen)), '%LP%') || like(upper(trim(departamento_origen)), '%LA PAZ%') || like(upper(trim(departamento_origen)), '%L.P.%'), 'La Paz',     like(upper(trim(departamento_origen)), '%SC%') || like(upper(trim(departamento_origen)), '%STA%CRUZ%') || like(upper(trim(departamento_origen)), '%SANTA CRUZ%'), 'Santa Cruz',     like(upper(trim(departamento_origen)), '%CB%') || like(upper(trim(departamento_origen)), '%COCHABAMBA%'), 'Cochabamba',     like(upper(trim(departamento_origen)), '%TJ%') || like(upper(trim(departamento_origen)), '%TARIJA%'), 'Tarija',     like(upper(trim(departamento_origen)), '%OR%') || like(upper(trim(departamento_origen)), '%ORURO%'), 'Oruro',     like(upper(trim(departamento_origen)), '%PT%') || like(upper(trim(departamento_origen)), '%POTOSI%'), 'Potosí',     like(upper(trim(departamento_origen)), '%CH%') || like(upper(trim(departamento_origen)), '%CHUQUISACA%'), 'Chuquisaca',     like(upper(trim(departamento_origen)), '%BN%') || like(upper(trim(departamento_origen)), '%BENI%'), 'Beni',     like(upper(trim(departamento_origen)), '%PA%') || like(upper(trim(departamento_origen)), '%PANDO%'), 'Pando',     initCap(trim(departamento_origen)) )) ~> NormalizarDepartamento",
+						"NormalizarDepartamento derive(genero = iif(equals(upper(left(trim(genero), 1)), 'F'), 'Femenino', 'Masculino')) ~> NormalizarSexo",
+						"NormalizarSexo derive(salario_mensual = toDecimal(     replace(         regexReplace(salario_mensual, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarSalario",
+						"NormalizarSalario derive(ci = regexExtract(ci, '(\\\\d+)', 1)) ~> NormalizarCI",
+						"NormalizarCI derive(estado = iif(     like(upper(trim(estado)), 'A%') || like(upper(trim(estado)), 'ACT%') || like(upper(trim(estado)), '%ACTIV%'),     'Activo',     iif(         like(upper(trim(estado)), '%BAJA%') || like(upper(trim(estado)), 'BJA%'),         'Baja',         iif(             like(upper(trim(estado)), 'R%') || like(upper(trim(estado)), '%RESERVA%') || like(upper(trim(estado)), 'RSV%'),             'En Reserva',             initCap(trim(estado))         )     ) )) ~> NormalizarEstado",
+						"NormalizarEstado sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_efectivo as integer,",
+						"          id_especialidad as integer,",
+						"          id_unidad_actual as integer,",
+						"          id_rango_actual as integer,",
+						"          nombre as string,",
+						"          ci as string,",
+						"          fecha_nacimiento as string,",
+						"          genero as string,",
+						"          departamento_origen as string,",
+						"          fecha_ingreso as string,",
+						"          estado as string,",
+						"          salario_mensual as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df__bronze')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EfectivosTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "EspecialidadesTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						},
+						{
+							"dataset": {
+								"referenceName": "EstructuraTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source3"
+						},
+						{
+							"dataset": {
+								"referenceName": "MovimientosTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source4"
+						},
+						{
+							"dataset": {
+								"referenceName": "OperacionesTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source5"
+						},
+						{
+							"dataset": {
+								"referenceName": "RangosTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source6"
+						},
+						{
+							"dataset": {
+								"referenceName": "TiposMovTablas",
+								"type": "DatasetReference"
+							},
+							"name": "source7"
+						},
+						{
+							"dataset": {
+								"referenceName": "TiposOperacionesTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source8"
+						},
+						{
+							"dataset": {
+								"referenceName": "UnidadesTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source9"
+						},
+						{
+							"dataset": {
+								"referenceName": "ZonasTabla",
+								"type": "DatasetReference"
+							},
+							"name": "source10"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "EfectivosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "EspecialidadesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						},
+						{
+							"dataset": {
+								"referenceName": "EstructuraBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink3"
+						},
+						{
+							"dataset": {
+								"referenceName": "MovimientosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink4"
+						},
+						{
+							"dataset": {
+								"referenceName": "OperacionesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink5"
+						},
+						{
+							"dataset": {
+								"referenceName": "RangosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink6"
+						},
+						{
+							"dataset": {
+								"referenceName": "TiposMovBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink7"
+						},
+						{
+							"dataset": {
+								"referenceName": "TiposOperacionesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink8"
+						},
+						{
+							"dataset": {
+								"referenceName": "UnidadesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink9"
+						},
+						{
+							"dataset": {
+								"referenceName": "ZonasBronze",
+								"type": "DatasetReference"
+							},
+							"name": "sink10"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          id_efectivo as integer,",
+						"          id_especialidad as integer,",
+						"          id_unidad_actual as integer,",
+						"          id_rango_actual as integer,",
+						"          nombre as string,",
+						"          ci as string,",
+						"          fecha_nacimiento as string,",
+						"          genero as string,",
+						"          departamento_origen as string,",
+						"          fecha_ingreso as string,",
+						"          estado as string,",
+						"          salario_mensual as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          id_especialidad as integer,",
+						"          nombre as string,",
+						"          area as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source(output(",
+						"          id_estructura as integer,",
+						"          id_padre as integer,",
+						"          nivel as string,",
+						"          nombre as string,",
+						"          sigla as string,",
+						"          tipo as string,",
+						"          cobertura_departamentos as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source3",
+						"source(output(",
+						"          id_movimiento as integer,",
+						"          id_efectivo as integer,",
+						"          id_unidad_destino as integer,",
+						"          id_rango as integer,",
+						"          id_tipo as integer,",
+						"          fecha_movimiento as string,",
+						"          antiguedad_anios as string,",
+						"          salario_mensual as string,",
+						"          observaciones as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source4",
+						"source(output(",
+						"          id_operacion as integer,",
+						"          id_tipo as integer,",
+						"          id_unidad_resp as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as string,",
+						"          fecha_fin as string,",
+						"          efectivos_desplegados as string,",
+						"          vehiculos_utilizados as string,",
+						"          duracion_dias as string,",
+						"          costo_operacion as string,",
+						"          resultado as string,",
+						"          detenidos as string,",
+						"          area_km2 as string,",
+						"          incidentes as string,",
+						"          observaciones as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source5",
+						"source(output(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          categoria as string,",
+						"          nivel_jerarquico as integer,",
+						"          abreviatura as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source6",
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          descripcion as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source7",
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source8",
+						"source(output(",
+						"          id_unidad as integer,",
+						"          id_brigada as integer,",
+						"          nombre as string,",
+						"          codigo as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          tipo_cuartel as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source9",
+						"source(output(",
+						"          id_zona as integer,",
+						"          nombre as string,",
+						"          departamento as string,",
+						"          frontera_con as string,",
+						"          tipo_terreno as string,",
+						"          altitud_msnm as integer,",
+						"          nivel_riesgo as string,",
+						"          acceso_carretero as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source10",
+						"source1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_efectivo as integer,",
+						"          id_especialidad as integer,",
+						"          id_unidad_actual as integer,",
+						"          id_rango_actual as integer,",
+						"          nombre as string,",
+						"          ci as string,",
+						"          fecha_nacimiento as string,",
+						"          genero as string,",
+						"          departamento_origen as string,",
+						"          fecha_ingreso as string,",
+						"          estado as string,",
+						"          salario_mensual as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1",
+						"source2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_especialidad as integer,",
+						"          nombre as string,",
+						"          area as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+						"source3 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_estructura as integer,",
+						"          id_padre as integer,",
+						"          nivel as string,",
+						"          nombre as string,",
+						"          sigla as string,",
+						"          tipo as string,",
+						"          cobertura_departamentos as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink3",
+						"source4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_movimiento as integer,",
+						"          id_efectivo as integer,",
+						"          id_unidad_destino as integer,",
+						"          id_rango as integer,",
+						"          id_tipo as integer,",
+						"          fecha_movimiento as string,",
+						"          antiguedad_anios as string,",
+						"          salario_mensual as string,",
+						"          observaciones as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink4",
+						"source5 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_operacion as integer,",
+						"          id_tipo as integer,",
+						"          id_unidad_resp as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as string,",
+						"          fecha_fin as string,",
+						"          efectivos_desplegados as string,",
+						"          vehiculos_utilizados as string,",
+						"          duracion_dias as string,",
+						"          costo_operacion as string,",
+						"          resultado as string,",
+						"          detenidos as string,",
+						"          area_km2 as string,",
+						"          incidentes as string,",
+						"          observaciones as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink5",
+						"source6 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          categoria as string,",
+						"          nivel_jerarquico as integer,",
+						"          abreviatura as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink6",
+						"source7 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          descripcion as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink7",
+						"source8 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink8",
+						"source9 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_unidad as integer,",
+						"          id_brigada as integer,",
+						"          nombre as string,",
+						"          codigo as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          tipo_cuartel as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink9",
+						"source10 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_zona as integer,",
+						"          nombre as string,",
+						"          departamento as string,",
+						"          frontera_con as string,",
+						"          tipo_terreno as string,",
+						"          altitud_msnm as integer,",
+						"          nivel_riesgo as string,",
+						"          acceso_carretero as boolean",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink10"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ZonasTabla')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_especialidades')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EspecialidadesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "EspecialidadesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "CapitalizarArea"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_especialidad as integer,",
+						"          nombre as string,",
+						"          area as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(area = initCap(area)) ~> CapitalizarArea",
+						"CapitalizarArea sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_especialidad as integer,",
+						"          nombre as string,",
+						"          area as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_estructura')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EstructuraBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "EstructuraSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "CapitalizarNivel"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_estructura as integer,",
+						"          id_padre as integer,",
+						"          nivel as string,",
+						"          nombre as string,",
+						"          sigla as string,",
+						"          tipo as string,",
+						"          cobertura_departamentos as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(nivel = initCap(nivel)) ~> CapitalizarNivel",
+						"CapitalizarNivel sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_estructura as integer,",
+						"          id_padre as integer,",
+						"          nivel as string,",
+						"          nombre as string,",
+						"          sigla as string,",
+						"          tipo as string,",
+						"          cobertura_departamentos as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_dim_unidad')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EstructuraSilver",
+								"type": "DatasetReference"
+							},
+							"name": "EstructuraSilverSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "UnidadesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "UnidadesSilverSource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlUnidad",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "join1"
+						},
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_estructura as integer,",
+						"          id_padre as integer,",
+						"          nivel as string,",
+						"          nombre as string,",
+						"          sigla as string,",
+						"          tipo as string,",
+						"          cobertura_departamentos as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> EstructuraSilverSource",
+						"source(output(",
+						"          id_unidad as integer,",
+						"          id_brigada as integer,",
+						"          nombre as string,",
+						"          codigo as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          tipo_cuartel as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> UnidadesSilverSource",
+						"EstructuraSilverSource, UnidadesSilverSource join(id_estructura == id_brigada,",
+						"     joinType:'right',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 aggregate(groupBy(id_unidad),",
+						"     id_estructura = first(id_estructura),",
+						"          id_padre = first(id_padre),",
+						"          nivel = first(nivel),",
+						"          nombre = first(EstructuraSilverSource@nombre),",
+						"          sigla = first(sigla),",
+						"          tipo = first(tipo),",
+						"          cobertura_departamentos = first(cobertura_departamentos),",
+						"          id_brigada = first(id_brigada),",
+						"          codigo = first(codigo),",
+						"          ciudad = first(ciudad),",
+						"          departamento = first(departamento),",
+						"          tipo_cuartel = first(tipo_cuartel)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_unidad as integer,",
+						"          nombre_unidad as string,",
+						"          tipo_unidad as string,",
+						"          nombre_brigada as string,",
+						"          nombre_division as string,",
+						"          nombre_rama as string,",
+						"          cobertura_departamental as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_unidad;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_unidad,",
+						"          nombre_unidad = EstructuraSilverSource@nombre,",
+						"          tipo_unidad = tipo_cuartel,",
+						"          nombre_brigada = EstructuraSilverSource@nombre,",
+						"          nombre_division = sigla,",
+						"          nombre_rama = tipo,",
+						"          cobertura_departamental = cobertura_departamentos",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_especialidad')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EspecialidadesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlEspecialidad",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_especialidad as integer,",
+						"          nombre as string,",
+						"          area as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 aggregate(groupBy(id_especialidad),",
+						"     nombre = first(nombre),",
+						"          area = first(area)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_especialidad as integer,",
+						"          nombre as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_especialidad;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_especialidad,",
+						"          nombre",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_fact_operaciones')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OperacionesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "AzureSqlOperaciones",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlOperaciones",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "cast1"
+						},
+						{
+							"name": "aggregate1"
+						},
+						{
+							"name": "exists1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_operacion as integer,",
+						"          id_tipo as integer,",
+						"          id_unidad_resp as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as string,",
+						"          fecha_fin as string,",
+						"          efectivos_desplegados as string,",
+						"          vehiculos_utilizados as string,",
+						"          duracion_dias as string,",
+						"          costo_operacion as string,",
+						"          resultado as string,",
+						"          detenidos as string,",
+						"          area_km2 as string,",
+						"          incidentes as string,",
+						"          observaciones as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          id_operacion as integer,",
+						"          id_tipo_operacion as integer,",
+						"          id_unidad_responsable as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as date,",
+						"          fecha_fin as date,",
+						"          efectivos_desplegados as integer,",
+						"          vehiculos_utilizados as integer,",
+						"          duracion_dias as integer,",
+						"          costo_operacion as decimal(18,2),",
+						"          resultado as string,",
+						"          detenidos as integer,",
+						"          area_km2 as decimal(12,2),",
+						"          incidentes as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1 cast(output(",
+						"          fecha_inicio as date 'yyyy-MM-dd',",
+						"          fecha_fin as date 'yyyy-MM-dd',",
+						"          efectivos_desplegados as integer,",
+						"          vehiculos_utilizados as integer,",
+						"          duracion_dias as integer,",
+						"          costo_operacion as decimal(10,0),",
+						"          detenidos as integer,",
+						"          area_km2 as decimal(10,0),",
+						"          incidentes as integer",
+						"     ),",
+						"     errors: true) ~> cast1",
+						"cast1 aggregate(groupBy(id_operacion),",
+						"     id_tipo = first(id_tipo),",
+						"          id_unidad_resp = first(id_unidad_resp),",
+						"          id_zona = first(id_zona),",
+						"          nombre_operacion = first(nombre_operacion),",
+						"          fecha_inicio = first(fecha_inicio),",
+						"          fecha_fin = first(fecha_fin),",
+						"          efectivos_desplegados = first(efectivos_desplegados),",
+						"          vehiculos_utilizados = first(vehiculos_utilizados),",
+						"          duracion_dias = first(duracion_dias),",
+						"          costo_operacion = first(costo_operacion),",
+						"          resultado = first(resultado),",
+						"          detenidos = first(detenidos),",
+						"          area_km2 = first(area_km2),",
+						"          incidentes = first(incidentes),",
+						"          observaciones = first(observaciones)) ~> aggregate1",
+						"aggregate1, source2 exists(id_unidad_resp == id_unidad_responsable,",
+						"     negate:false,",
+						"     broadcast: 'auto')~> exists1",
+						"exists1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_operacion as integer,",
+						"          id_tipo_operacion as integer,",
+						"          id_unidad_responsable as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as date,",
+						"          fecha_fin as date,",
+						"          efectivos_desplegados as integer,",
+						"          vehiculos_utilizados as integer,",
+						"          duracion_dias as integer,",
+						"          costo_operacion as decimal(18,2),",
+						"          resultado as string,",
+						"          detenidos as integer,",
+						"          area_km2 as decimal(12,2),",
+						"          incidentes as integer",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.fact_operaciones;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_operacion,",
+						"          id_tipo_operacion = id_tipo,",
+						"          id_unidad_responsable = id_unidad_resp,",
+						"          id_zona,",
+						"          nombre_operacion,",
+						"          fecha_inicio,",
+						"          fecha_fin,",
+						"          efectivos_desplegados,",
+						"          vehiculos_utilizados,",
+						"          duracion_dias,",
+						"          costo_operacion,",
+						"          resultado,",
+						"          detenidos,",
+						"          area_km2,",
+						"          incidentes",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_rango')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "RangosSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTable1",
+								"type": "DatasetReference"
+							},
+							"name": "DestinoDimRango"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          categoria as string,",
+						"          nivel_jerarquico as integer,",
+						"          abreviatura as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 aggregate(groupBy(id_rango),",
+						"     nombre = first(nombre),",
+						"          categoria = first(categoria),",
+						"          nivel_jerarquico = first(nivel_jerarquico),",
+						"          abreviatura = first(abreviatura)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          sigla as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_rango;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_rango,",
+						"          nombre,",
+						"          sigla = categoria",
+						"     )) ~> DestinoDimRango"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_tipo_movimiento')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "TiposMovSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTableMovimiento",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          descripcion as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 aggregate(groupBy(id_tipo),",
+						"     nombre = first(nombre),",
+						"          descripcion = first(descripcion)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_tipo_movimiento;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_tipo,",
+						"          nombre",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_tipo_operacion')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "TiposOperacionesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTable3",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 aggregate(groupBy(id_tipo),",
+						"     nombre = first(nombre),",
+						"          categoria = first(categoria)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_tipo_operacion;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_tipo,",
+						"          nombre,",
+						"          categoria",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_gold_zona_operacion')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "gold"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ZonasSilver",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlZonaOperacion",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregate1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_zona as integer,",
+						"          nombre as string,",
+						"          departamento as string,",
+						"          frontera_con as string,",
+						"          tipo_terreno as string,",
+						"          altitud_msnm as integer,",
+						"          nivel_riesgo as string,",
+						"          acceso_carretero as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 aggregate(groupBy(id_zona),",
+						"     nombre = first(nombre),",
+						"          departamento = first(departamento),",
+						"          frontera_con = first(frontera_con),",
+						"          tipo_terreno = first(tipo_terreno),",
+						"          altitud_msnm = first(altitud_msnm),",
+						"          nivel_riesgo = first(nivel_riesgo),",
+						"          acceso_carretero = first(acceso_carretero)) ~> aggregate1",
+						"aggregate1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_zona as integer,",
+						"          nombre_zona as string,",
+						"          departamento as string,",
+						"          frontera_con as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     preSQLs:['DELETE FROM dw.dim_zona_operacion;'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          id_zona,",
+						"          nombre_zona = nombre,",
+						"          departamento,",
+						"          frontera_con",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ZonasSilver')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_movimientos')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "MovimientosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "MovimientosSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "NormalizarFecha"
+						},
+						{
+							"name": "NormalizarSalario"
+						},
+						{
+							"name": "NormalizarAntiguedad"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_movimiento as integer,",
+						"          id_efectivo as integer,",
+						"          id_unidad_destino as integer,",
+						"          id_rango as integer,",
+						"          id_tipo as integer,",
+						"          fecha_movimiento as string,",
+						"          antiguedad_anios as string,",
+						"          salario_mensual as string,",
+						"          observaciones as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(fecha_movimiento = coalesce(toDate(fecha_movimiento, 'dd-MM-yyyy'),toDate(fecha_movimiento,  'dd/MM/yyyy'),toDate(fecha_movimiento, 'yyyy/MM/dd'),toDate(fecha_movimiento, 'yyyyMMdd'), toDate(fecha_movimiento, 'yyyy-MM-dd'))) ~> NormalizarFecha",
+						"NormalizarAntiguedad derive(salario_mensual = toDecimal(     replace(         regexReplace(salario_mensual, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarSalario",
+						"NormalizarFecha derive(antiguedad_anios = toInteger(    replace(        replace(            replace(                replace(                    replace(                        replace(                            replace(                                replace(                                    replace(                                        replace(                                            replace(                                                replace(                                                    replace(                                                        replace(                                                            replace(                                                                replace(                                                                    replace(                                                                        trim(                                                                            regexReplace(                                                                                replace(                                                                                    replace(                                                                                        replace(                                                                                            lower(trim(antiguedad_anios)),                                                                                            'aprox.', ''                                                                                        ),                                                                                         'años', ''                                                                                    ),                                                                                     'a.', ''                                                                                ),                                                                                 ' +', ' '                                                                            )                                                                        ),                                                                        'diecisiete', '17'                                                                    ),                                                                    'dieciséis', '16'                                                                ),                                                                'quince', '15'                                                            ),                                                            'catorce', '14'                                                        ),                                                        'trece', '13'                                                    ),                                                    'doce', '12'                                                ),                                                'once', '11'                                            ),                                            'diez', '10'                                        ),                                        'nueve', '9'                                    ),                                    'ocho', '8'                                ),                                'siete', '7'                            ),                            'seis', '6'                        ),                        'cinco', '5'                    ),                    'cuatro', '4'                ),                'tres', '3'            ),            'dos', '2'        ),        'cero', '0'    ))) ~> NormalizarAntiguedad",
+						"NormalizarSalario sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_movimiento as integer,",
+						"          id_efectivo as integer,",
+						"          id_unidad_destino as integer,",
+						"          id_rango as integer,",
+						"          id_tipo as integer,",
+						"          fecha_movimiento as string,",
+						"          antiguedad_anios as string,",
+						"          salario_mensual as string,",
+						"          observaciones as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_operaciones')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "OperacionesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "OperacionesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "NormalizarNombreOperacion"
+						},
+						{
+							"name": "NormalizarFecha"
+						},
+						{
+							"name": "NormalizarNumeros"
+						},
+						{
+							"name": "NormalizarCosto"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_operacion as integer,",
+						"          id_tipo as integer,",
+						"          id_unidad_resp as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as string,",
+						"          fecha_fin as string,",
+						"          efectivos_desplegados as string,",
+						"          vehiculos_utilizados as string,",
+						"          duracion_dias as string,",
+						"          costo_operacion as string,",
+						"          resultado as string,",
+						"          detenidos as string,",
+						"          area_km2 as string,",
+						"          incidentes as string,",
+						"          observaciones as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(nombre_operacion = trim(\r",
+						"    regexReplace(\r",
+						"        regexReplace(\r",
+						"            regexReplace(\r",
+						"                regexReplace(\r",
+						"                    trim(nombre_operacion),\r",
+						"                    '[—–]', '-'                          \r",
+						"                ),\r",
+						"                '^(Op(eración)?\\\\.?\\\\s*)+', ''           \r",
+						"            ),\r",
+						"            '\\\\([^)]*?(\\\\d{4})[^)]*\\\\)', '$1'            \r",
+						"        ),\r",
+						"        '\\\\s+', ' '                                      \r",
+						"    )\r",
+						")) ~> NormalizarNombreOperacion",
+						"NormalizarNombreOperacion derive(fecha_inicio = coalesce(\r",
+						"    toDate(fecha_inicio, 'dd-MM-yyyy'),\r",
+						"    toDate(fecha_inicio, 'dd/MM/yyyy'),\r",
+						"    toDate(fecha_inicio, 'yyyy/MM/dd'),\r",
+						"    toDate(fecha_inicio, 'yyyyMMdd'),\r",
+						"    toDate(fecha_inicio, 'yyyy-MM-dd'),\r",
+						"    toDate(fecha_inicio, 'MM-dd-yyyy'),\r",
+						"    toDate(\r",
+						"        replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(\r",
+						"            lower(trim(fecha_inicio)),\r",
+						"            'enero', '01'),\r",
+						"            'febrero', '02'),\r",
+						"            'marzo', '03'),\r",
+						"            'abril', '04'),\r",
+						"            'mayo', '05'),\r",
+						"            'junio', '06'),\r",
+						"            'julio', '07'),\r",
+						"            'agosto', '08'),\r",
+						"            'septiembre', '09'),\r",
+						"            'octubre', '10'),\r",
+						"            'noviembre', '11'),\r",
+						"            'diciembre', '12'),\r",
+						"            'ene', '01'),\r",
+						"            'feb', '02'),\r",
+						"            'mar', '03'),\r",
+						"            'abr', '04'),\r",
+						"            'may', '05'),\r",
+						"            'jun', '06'),\r",
+						"            'jul', '07'),\r",
+						"            'ago', '08'),\r",
+						"            'sep', '09'),\r",
+						"            'oct', '10'),\r",
+						"            'nov', '11'),\r",
+						"            'dic', '12'),\r",
+						"        'dd-MM-yyyy')\r",
+						"    )\r",
+						"),",
+						"          fecha_fin = coalesce(\r",
+						"    toDate(fecha_fin, 'dd-MM-yyyy'),\r",
+						"    toDate(fecha_fin, 'dd/MM/yyyy'),\r",
+						"    toDate(fecha_fin, 'yyyy/MM/dd'),\r",
+						"    toDate(fecha_fin, 'yyyyMMdd'),\r",
+						"    toDate(fecha_fin, 'yyyy-MM-dd'),\r",
+						"    toDate(fecha_fin, 'MM-dd-yyyy'),\r",
+						"    toDate(\r",
+						"        replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(\r",
+						"            lower(trim(fecha_fin)),\r",
+						"            'enero', '01'),\r",
+						"            'febrero', '02'),\r",
+						"            'marzo', '03'),\r",
+						"            'abril', '04'),\r",
+						"            'mayo', '05'),\r",
+						"            'junio', '06'),\r",
+						"            'julio', '07'),\r",
+						"            'agosto', '08'),\r",
+						"            'septiembre', '09'),\r",
+						"            'octubre', '10'),\r",
+						"            'noviembre', '11'),\r",
+						"            'diciembre', '12'),\r",
+						"            'ene', '01'),\r",
+						"            'feb', '02'),\r",
+						"            'mar', '03'),\r",
+						"            'abr', '04'),\r",
+						"            'may', '05'),\r",
+						"            'jun', '06'),\r",
+						"            'jul', '07'),\r",
+						"            'ago', '08'),\r",
+						"            'sep', '09'),\r",
+						"            'oct', '10'),\r",
+						"            'nov', '11'),\r",
+						"            'dic', '12'),\r",
+						"        'dd-MM-yyyy')\r",
+						"    )\r",
+						")) ~> NormalizarFecha",
+						"NormalizarFecha derive(efectivos_desplegados = toInteger(\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'cien', '100',\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'cincuenta', '50',\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'doscientos', '200',\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'trescientos', '300',\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'quinientos', '500',\r",
+						"    iif(\r",
+						"        lower(trim(efectivos_desplegados)) == 'ciento cincuenta', '150',\r",
+						"\r",
+						"        regexReplace(\r",
+						"            lower(trim(efectivos_desplegados)),\r",
+						"            '[^0-9]',\r",
+						"            ''\r",
+						"        )\r",
+						"\r",
+						"    ))))))\r",
+						"),",
+						"          vehiculos_utilizados = toInteger(     regexReplace(         lower(trim(vehiculos_utilizados)),         '[^0-9]',         ''     ) ),",
+						"          duracion_dias = toInteger(     iif(         lower(trim(duracion_dias)) == 'veinte', '20',     iif(         lower(trim(duracion_dias)) == 'dieciseis', '16',     iif(         lower(trim(duracion_dias)) == 'dieciséis', '16',         regexReplace(             lower(trim(duracion_dias)),             '[^0-9]',             ''         )     ))) ),",
+						"          detenidos = toInteger(     iif(         lower(trim(detenidos)) == 'sin detenidos', '0',     iif(         lower(trim(detenidos)) == 'ninguno', '0',     iif(         lower(trim(detenidos)) == 'cero', '0',     iif(         lower(trim(detenidos)) == 'veinte', '20',         regexReplace(             lower(trim(detenidos)),             '[^0-9]',             ''         )     )))) ),",
+						"          incidentes = toInteger(     iif(         lower(trim(incidentes)) == 'sin incidentes', '0',     iif(         lower(trim(incidentes)) == 'ninguno', '0',     iif(         lower(trim(incidentes)) == 'n/a', '0',     iif(         lower(trim(incidentes)) == 'na', '0',         regexReplace(             lower(trim(incidentes)),             '[^0-9]',             ''         )     )))) ),",
+						"          area_km2 = toInteger(     regexReplace(         lower(trim(area_km2)),         '[^0-9]',         ''     ) )) ~> NormalizarNumeros",
+						"NormalizarNumeros derive(costo_operacion = toDecimal(     replace(         regexReplace(costo_operacion, '[^0-9,.-]', ''),         ',', ''     ),     18,     2 )) ~> NormalizarCosto",
+						"NormalizarCosto sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_operacion as integer,",
+						"          id_tipo as integer,",
+						"          id_unidad_resp as integer,",
+						"          id_zona as integer,",
+						"          nombre_operacion as string,",
+						"          fecha_inicio as string,",
+						"          fecha_fin as string,",
+						"          efectivos_desplegados as string,",
+						"          vehiculos_utilizados as string,",
+						"          duracion_dias as string,",
+						"          costo_operacion as string,",
+						"          resultado as string,",
+						"          detenidos as string,",
+						"          area_km2 as string,",
+						"          incidentes as string,",
+						"          observaciones as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_rangos')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "RangosBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "RangosSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          categoria as string,",
+						"          nivel_jerarquico as integer,",
+						"          abreviatura as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_rango as integer,",
+						"          nombre as string,",
+						"          categoria as string,",
+						"          nivel_jerarquico as integer,",
+						"          abreviatura as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_tiposmov')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "TiposMovBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "TiposMovSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          descripcion as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(nombre = initCap(nombre)) ~> derivedColumn1",
+						"derivedColumn1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          descripcion as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_tiposoperaciones')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "TiposOperacionesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "TiposOperacionesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(categoria = initCap(categoria)) ~> derivedColumn1",
+						"derivedColumn1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_tipo as integer,",
+						"          nombre as string,",
+						"          categoria as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_unidades')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "UnidadesBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "UnidadesSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_unidad as integer,",
+						"          id_brigada as integer,",
+						"          nombre as string,",
+						"          codigo as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          tipo_cuartel as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(tipo_cuartel = initCap(tipo_cuartel)) ~> derivedColumn1",
+						"derivedColumn1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_unidad as integer,",
+						"          id_brigada as integer,",
+						"          nombre as string,",
+						"          codigo as string,",
+						"          ciudad as string,",
+						"          departamento as string,",
+						"          tipo_cuartel as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_zonas')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "bronze"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ZonasBronze",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ZonasSilver",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "CapitalizarTerrenoRiesgo"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id_zona as integer,",
+						"          nombre as string,",
+						"          departamento as string,",
+						"          frontera_con as string,",
+						"          tipo_terreno as string,",
+						"          altitud_msnm as integer,",
+						"          nivel_riesgo as string,",
+						"          acceso_carretero as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source1 derive(tipo_terreno = initCap(tipo_terreno),",
+						"          nivel_riesgo = initCap(nivel_riesgo)) ~> CapitalizarTerrenoRiesgo",
+						"CapitalizarTerrenoRiesgo sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          id_zona as integer,",
+						"          nombre as string,",
+						"          departamento as string,",
+						"          frontera_con as string,",
+						"          tipo_terreno as string,",
+						"          altitud_msnm as integer,",
+						"          nivel_riesgo as string,",
+						"          acceso_carretero as boolean",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ZonasSilver')]"
+			]
+		}
+	]
+}

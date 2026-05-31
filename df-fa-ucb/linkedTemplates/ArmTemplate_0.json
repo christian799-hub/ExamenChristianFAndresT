@@ -1,0 +1,986 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Nombre de instancia de Data Factory",
+			"defaultValue": "df-fa-ucb"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Cadena protegida para \"accountKey\"de \"AzureDataLakeStorage1\""
+		},
+		"BaseDeDatos_password": {
+			"type": "secureString",
+			"metadata": "Cadena protegida para \"password\"de \"BaseDeDatos\""
+		},
+		"Destino_password": {
+			"type": "secureString",
+			"metadata": "Cadena protegida para \"password\"de \"Destino\""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://fuerzasarmadasdw.dfs.core.windows.net/"
+		},
+		"BaseDeDatos_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "server02-fuerzas-armadas-bolivia.database.windows.net"
+		},
+		"BaseDeDatos_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "erp-fuerzas-armadas-bolivia-2"
+		},
+		"BaseDeDatos_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "userSisGer"
+		},
+		"Destino_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "server02-fuerzas-armadas-dw.database.windows.net"
+		},
+		"Destino_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "dw-fuerzas-armadas-bolivia"
+		},
+		"Destino_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "admin2"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDataLakeStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BaseDeDatos')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('BaseDeDatos_properties_typeProperties_server')]",
+					"database": "[parameters('BaseDeDatos_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": true,
+					"authenticationType": "SQL",
+					"userName": "[parameters('BaseDeDatos_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('BaseDeDatos_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Destino')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('Destino_properties_typeProperties_server')]",
+					"database": "[parameters('Destino_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('Destino_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('Destino_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlEspecialidad')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_especialidad"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlMovimientoPersonal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_movimiento",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_efectivo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_unidad_destino",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_rango",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_tipo_movimiento",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "fecha_movimiento",
+						"type": "date"
+					},
+					{
+						"name": "antiguedad_anios",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "salario_mensual",
+						"type": "decimal",
+						"precision": 18,
+						"scale": 2
+					},
+					{
+						"name": "observaciones",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "fact_movimientos_personal"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlOperaciones')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_operacion",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_tipo_operacion",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_unidad_responsable",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_zona",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre_operacion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fecha_inicio",
+						"type": "date"
+					},
+					{
+						"name": "fecha_fin",
+						"type": "date"
+					},
+					{
+						"name": "efectivos_desplegados",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "vehiculos_utilizados",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "duracion_dias",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "costo_operacion",
+						"type": "decimal",
+						"precision": 18,
+						"scale": 2
+					},
+					{
+						"name": "resultado",
+						"type": "varchar"
+					},
+					{
+						"name": "detenidos",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "area_km2",
+						"type": "decimal",
+						"precision": 12,
+						"scale": 2
+					},
+					{
+						"name": "incidentes",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "fact_operaciones"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_rango",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "varchar"
+					},
+					{
+						"name": "sigla",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_rango"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_especialidad"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_tipo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "categoria",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "TiposOperaciones"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTableMovimiento')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_tipo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_tipo_movimiento"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlUnidad')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_unidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre_unidad",
+						"type": "varchar"
+					},
+					{
+						"name": "tipo_unidad",
+						"type": "varchar"
+					},
+					{
+						"name": "nombre_brigada",
+						"type": "varchar"
+					},
+					{
+						"name": "nombre_division",
+						"type": "varchar"
+					},
+					{
+						"name": "nombre_rama",
+						"type": "varchar"
+					},
+					{
+						"name": "cobertura_departamental",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_unidad"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlZonaOperacion')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_zona",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre_zona",
+						"type": "varchar"
+					},
+					{
+						"name": "departamento",
+						"type": "varchar"
+					},
+					{
+						"name": "frontera_con",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dw",
+					"table": "dim_zona_operacion"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EfectivosBronze')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_efectivo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_unidad_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_rango_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ci",
+						"type": "varchar"
+					},
+					{
+						"name": "fecha_nacimiento",
+						"type": "varchar"
+					},
+					{
+						"name": "genero",
+						"type": "varchar"
+					},
+					{
+						"name": "departamento_origen",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fecha_ingreso",
+						"type": "varchar"
+					},
+					{
+						"name": "estado",
+						"type": "varchar"
+					},
+					{
+						"name": "salario_mensual",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "Efectivos"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EfectivosSilver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_efectivo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_unidad_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_rango_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ci",
+						"type": "varchar"
+					},
+					{
+						"name": "fecha_nacimiento",
+						"type": "varchar"
+					},
+					{
+						"name": "genero",
+						"type": "varchar"
+					},
+					{
+						"name": "departamento_origen",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fecha_ingreso",
+						"type": "varchar"
+					},
+					{
+						"name": "estado",
+						"type": "varchar"
+					},
+					{
+						"name": "salario_mensual",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "Efectivos"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EfectivosTabla')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BaseDeDatos",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_efectivo",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_unidad_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_rango_actual",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ci",
+						"type": "varchar"
+					},
+					{
+						"name": "fecha_nacimiento",
+						"type": "varchar"
+					},
+					{
+						"name": "genero",
+						"type": "varchar"
+					},
+					{
+						"name": "departamento_origen",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fecha_ingreso",
+						"type": "varchar"
+					},
+					{
+						"name": "estado",
+						"type": "varchar"
+					},
+					{
+						"name": "salario_mensual",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "oltp",
+					"table": "tbl_efectivos"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BaseDeDatos')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EspecialidadesBronze')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "area",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "Especialidad"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EspecialidadesSilver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "area",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "Especialidad"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EspecialidadesTabla')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BaseDeDatos",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_especialidad",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "area",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "oltp",
+					"table": "tbl_especialidades"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BaseDeDatos')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EstructuraBronze')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "bronze"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_estructura",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_padre",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nivel",
+						"type": "varchar"
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "sigla",
+						"type": "varchar"
+					},
+					{
+						"name": "tipo",
+						"type": "varchar"
+					},
+					{
+						"name": "cobertura_departamentos",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "bronze",
+					"table": "Estructura"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EstructuraSilver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Destino",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "silver"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "id_estructura",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "id_padre",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "nivel",
+						"type": "varchar"
+					},
+					{
+						"name": "nombre",
+						"type": "nvarchar"
+					},
+					{
+						"name": "sigla",
+						"type": "varchar"
+					},
+					{
+						"name": "tipo",
+						"type": "varchar"
+					},
+					{
+						"name": "cobertura_departamentos",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "silver",
+					"table": "Estructura"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Destino')]"
+			]
+		}
+	]
+}

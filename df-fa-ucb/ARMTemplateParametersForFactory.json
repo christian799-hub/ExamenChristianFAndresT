@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "df-fa-ucb"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
+		"BaseDeDatos_password": {
+			"value": ""
+		},
+		"Destino_password": {
+			"value": ""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://fuerzasarmadasdw.dfs.core.windows.net/"
+		},
+		"BaseDeDatos_properties_typeProperties_server": {
+			"value": "server02-fuerzas-armadas-bolivia.database.windows.net"
+		},
+		"BaseDeDatos_properties_typeProperties_database": {
+			"value": "erp-fuerzas-armadas-bolivia-2"
+		},
+		"BaseDeDatos_properties_typeProperties_userName": {
+			"value": "userSisGer"
+		},
+		"Destino_properties_typeProperties_server": {
+			"value": "server02-fuerzas-armadas-dw.database.windows.net"
+		},
+		"Destino_properties_typeProperties_database": {
+			"value": "dw-fuerzas-armadas-bolivia"
+		},
+		"Destino_properties_typeProperties_userName": {
+			"value": "admin2"
+		}
+	}
+}
